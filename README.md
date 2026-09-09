@@ -138,12 +138,36 @@ pinact run
 ## CI / リリース
 
 - **CI** (`.github/workflows/ci.yml`) — Pull Request と `main` への push で、`go build` / `go vet` / `go test -race -cover` と `golangci-lint run` を実行します。
+- **tagpr** (`.github/workflows/tagpr.yml`) — `main` への push で [tagpr](https://github.com/Songmu/tagpr) がリリース PR を維持します。マージするとタグが打たれます。
 - **Release** (`.github/workflows/release.yml`) — `v*` のタグを push すると [goreleaser](https://goreleaser.com/) が linux / macOS / Windows の amd64・arm64 向けバイナリをビルドし、GitHub Release を作成します。
+
+リリースの流れは次のとおりです。
+
+1. `main` に変更が入ると tagpr が「次のバージョン」のリリース PR を作成・更新します（CHANGELOG も更新）。
+2. そのリリース PR をマージすると tagpr が `vX.Y.Z` のタグを打ちます。メジャー / マイナーを上げたい場合は、PR に `major` / `minor` ラベルを付けてからマージします。
+3. タグの push で Release ワークフローが動き、goreleaser が成果物付きの GitHub Release を公開します。
+
+タグを手動で打っても同じく Release ワークフローが動きます。
 
 ```sh
 git tag v0.1.0
 git push origin v0.1.0
 ```
+
+### tagpr のセットアップ
+
+タグは GitHub App のトークンで push します。`GITHUB_TOKEN` で作成したタグは別のワークフローを起動しないため、それでは Release ワークフローが動かないからです。
+
+リポジトリに以下を設定してください。
+
+| 種別 | 名前 | 内容 |
+|---|---|---|
+| Variables | `TAGPR_APP_ID` | GitHub App の App ID |
+| Secrets | `TAGPR_APP_PRIVATE_KEY` | GitHub App の秘密鍵 |
+
+App に必要な権限は Contents: Read and write / Pull requests: Read and write / Issues: Read-only です。
+
+なお GitHub Release は goreleaser が作るため、`.tagpr` では `release = false` にしてあります。バージョンはタグからのみ決まり（`versionFile = -`）、ビルド時に `-X main.version` で埋め込まれます。
 
 リリース前に成果物を確認するには:
 
