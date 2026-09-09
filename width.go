@@ -155,12 +155,12 @@ func escapeLen(s string) int {
 	return 0
 }
 
-// truncateToWidth cuts s to at most max terminal cells, appending an ellipsis.
+// truncateToWidth cuts s to at most maxWidth terminal cells, appending an ellipsis.
 // Escape sequences are preserved (they cost no width) and the result is closed
 // with a reset — plus an OSC 8 terminator when the cut fell inside a link — so
 // truncation never leaks styling into the rest of the terminal.
-func truncateToWidth(s string, max int) string {
-	if max <= 0 || displayWidth(s) <= max {
+func truncateToWidth(s string, maxWidth int) string {
+	if maxWidth <= 0 || displayWidth(s) <= maxWidth {
 		return s
 	}
 	var b strings.Builder
@@ -176,7 +176,7 @@ func truncateToWidth(s string, max int) string {
 			if r == 0xFE0F && prev == 1 {
 				cw = 1
 			}
-			if w+cw > max-1 {
+			if w+cw > maxWidth-1 {
 				truncated = true
 				break
 			}
