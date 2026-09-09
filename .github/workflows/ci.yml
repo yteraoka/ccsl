@@ -31,3 +31,17 @@ jobs:
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
 
       - run: golangci-lint run --timeout=5m
+
+  # Builds every release target here so a v* tag never fails on something a
+  # pull request could have caught. The release workflow itself is the only
+  # thing that publishes.
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Installs the Go and goreleaser versions pinned in mise.toml.
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+
+      - run: goreleaser check
+      - run: goreleaser build --snapshot --clean

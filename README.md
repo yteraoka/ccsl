@@ -149,7 +149,7 @@ pinact run
 
 ## CI / リリース
 
-- **CI** (`.github/workflows/ci.yml`) — Pull Request と `main` への push で、`go build` / `go vet` / `go test -race -cover` と `golangci-lint run` を実行します。
+- **CI** (`.github/workflows/ci.yml`) — Pull Request と `main` への push で、`go build` / `go vet` / `go test -race -cover`、`golangci-lint run`、そして `goreleaser check` と全プラットフォーム向けのスナップショットビルドを実行します。
 - **tagpr** (`.github/workflows/tagpr.yml`) — `main` への push で [tagpr](https://github.com/Songmu/tagpr) がリリース PR を維持します。マージするとタグが打たれます。
 - **Release** (`.github/workflows/release.yml`) — `v*` のタグを push すると [goreleaser](https://goreleaser.com/) が linux / macOS / Windows の amd64・arm64 向けバイナリをビルドし、GitHub Release を作成します。
 
