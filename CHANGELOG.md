@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.0.1](https://github.com/yteraoka/ccsl/compare/v1.0.0...v1.0.1) - 2026-09-09
+
+- README に mise でのインストール方法を追加し、バージョンを tagpr に更新させる by @yteraoka in https://github.com/yteraoka/ccsl/pull/11
+- CI で goreleaser のビルドを検証する by @yteraoka in https://github.com/yteraoka/ccsl/pull/13
+- Renovate の PR をアサインし、minor 以下を auto merge する by @yteraoka in https://github.com/yteraoka/ccsl/pull/14
+
 ## [v0.0.1](https://github.com/yteraoka/ccsl/commits/v0.0.1) - 2026-09-09
 
 - Claude Code の status line 生成コマンドを追加 by @yteraoka in https://github.com/yteraoka/ccsl/pull/1
