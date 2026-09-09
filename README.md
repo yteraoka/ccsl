@@ -162,7 +162,7 @@ git push origin v0.1.0
 
 | 種別 | 名前 | 内容 |
 |---|---|---|
-| Variables | `TAGPR_APP_ID` | GitHub App の App ID |
+| Variables | `TAGPR_APP_ID` | GitHub App の Client ID (`Iv23...`) |
 | Secrets | `TAGPR_APP_PRIVATE_KEY` | GitHub App の秘密鍵 |
 
 App に必要な権限は Contents: Read and write / Pull requests: Read and write / Issues: Read-only です。
