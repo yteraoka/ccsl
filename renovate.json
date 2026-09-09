@@ -2,5 +2,19 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "assignees": [
+    "yteraoka"
+  ],
+  "packageRules": [
+    {
+      "description": "Merge minor and patch updates once CI passes. Major updates stay open for review.",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin"
+      ],
+      "automerge": true
+    }
   ]
 }
