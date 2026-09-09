@@ -1,0 +1,128 @@
+# ccsl
+
+`ccsl` (**c**laude **c**ode **s**tatus **l**ine) は [Claude Code の status line](https://code.claude.com/docs/en/statusline.md) を描画する Go 製コマンドです。
+Claude Code が stdin に流すセッション JSON を読み、3 行のステータスラインを stdout に出力します。
+
+```
+🤖 Opus │ 📁 ~/ghq/github.com/yteraoka/ccsl │ 🌿 main✱ ↑2 │ 🌳 my-feature ← main │ 🔗 PR #1234 👀
+🧠 ████░░░░░░ 43% (85.7k/200k) │ ⏳ 5h 24% 2h10m │ 📅 7d 91% 3d4h │ 💰 $1.23 │ ⏱️ 1h15m │ ⚡ 12m03s
+🆔 2fa45908-49bb-4048-b74c-e58d273f075a
+```
+
+1 行目に「どこで作業しているか」、2 行目に「どれだけ消費しているか」、3 行目にセッション ID を表示します。
+
+## 表示内容
+
+| | 項目 | 説明 |
+|---|---|---|
+| 🤖 | モデル名 | `model.display_name` |
+| 📁 | 作業ディレクトリ | `$HOME` は `~` に短縮。幅が足りなければ `…/末尾` に省略 |
+| 🌿 | git ブランチ | `git` から取得。`✱` = 未コミットの変更、`↑`/`↓` = upstream との差分。detached HEAD は `@abc1234` |
+| 🌳 | git worktree | worktree セッション名と分岐元ブランチ (`← main`)。通常の linked worktree は `workspace.git_worktree` |
+| 🔗 | Pull Request | `pr.number` / `pr.url`。OSC 8 でクリック可能。レビュー状態は ✅ approved / ❌ changes\_requested / 👀 pending / 📝 draft。GitLab の場合は `MR !123` |
+| 🧠 | トークン消費率 | コンテキストウィンドウ使用率のバー + % + 実トークン数。70% で黄、90% で赤。200k 超は `⚠` |
+| ⏳ | 5 時間リミット | 使用率と、リセットまでの残り時間 |
+| 📅 | 7 日リミット | 同上 |
+| 💳 | スペンドリミット | Claude apps gateway 配下の場合のみ |
+| 💰 | コスト | `cost.total_cost_usd`（クライアント側の概算） |
+| ⏱️ | セッション継続時間 | `cost.total_duration_ms` |
+| ⚡ | API 合計時間 | `cost.total_api_duration_ms` |
+| 🆔 | セッション ID | 3 行目に `session_id` を省略せず全体表示 |
+
+JSON に含まれない項目（PR がない、worktree ではない、サブスクリプションのレート制限が届いていない等）は自動的に省略されます。
+
+## インストール
+
+```sh
+go install github.com/yteraoka/ccsl@latest
+```
+
+ソースから:
+
+```sh
+git clone https://github.com/yteraoka/ccsl.git
+cd ccsl
+go build -o ccsl .
+```
+
+## 設定
+
+`~/.claude/settings.json`（またはプロジェクトの `.claude/settings.json`）に追加します。
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "ccsl",
+    "padding": 0
+  }
+}
+```
+
+`PATH` に入れていない場合は絶対パスを指定してください。
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "/home/you/go/bin/ccsl"
+  }
+}
+```
+
+レート制限のカウントダウンやセッション時間をアイドル中も更新したい場合は `refreshInterval` を指定します。
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "ccsl",
+    "refreshInterval": 30000
+  }
+}
+```
+
+## オプション
+
+| フラグ | 説明 |
+|---|---|
+| `--one-line` | 3 行ではなく 1 行にまとめる |
+| `--no-emoji` | 絵文字の代わりにテキストラベル (`model` / `dir` / `ctx` …) を使う |
+| `--no-color` | ANSI カラーを出力しない（環境変数 `NO_COLOR` でも同じ） |
+| `--no-links` | PR の OSC 8 クリッカブルリンクを無効化（未対応ターミナル向け） |
+| `--no-git-status` | `✱` と `↑`/`↓` の取得をやめて git 呼び出しを 1 回に減らす |
+| `--bar-width N` | コンテキスト使用率バーの幅（既定 10） |
+| `--version` | バージョンを表示 |
+
+## 動作確認
+
+Claude Code を経由せずに試すには、JSON を直接流し込みます。
+
+```sh
+echo '{
+  "cwd": "'"$PWD"'",
+  "session_id": "2fa45908-49bb-4048-b74c-e58d273f075a",
+  "model": {"display_name": "Opus"},
+  "workspace": {"current_dir": "'"$PWD"'"},
+  "cost": {"total_cost_usd": 1.23, "total_duration_ms": 4500000, "total_api_duration_ms": 723000},
+  "context_window": {"total_input_tokens": 84500, "total_output_tokens": 1200,
+                     "context_window_size": 200000, "used_percentage": 42.85}
+}' | ccsl
+```
+
+## 補足
+
+- Claude Code はアシスタントのメッセージごとにこのコマンドを実行するため、git 呼び出しには 400ms のタイムアウトを設けています。取得できなければブランチ表示を省略するだけで、ステータスラインが止まることはありません。
+- ターミナル幅は Claude Code が渡す環境変数 `COLUMNS` から読み取り、はみ出す場合はディレクトリを省略、それでも収まらなければ行末を `…` で切り詰めます。
+- `rate_limits` は Claude.ai Pro / Max のサブスクリプションで、かつセッション最初の API 応答以降にのみ届きます。
+
+## 開発
+
+```sh
+go test ./...
+go vet ./...
+```
+
+## License
+
+MIT
