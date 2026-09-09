@@ -182,3 +182,79 @@ func TestGitWorktreeFallsBackToWorkspaceField(t *testing.T) {
 		t.Error("want workspace.git_worktree rendered when worktree.* is absent")
 	}
 }
+
+func withCache(t *testing.T, pc *PromptCache) *Input {
+	t.Helper()
+	in := fullInput(t)
+	in.PromptCache = pc
+	return in
+}
+
+func TestRenderCacheWarm(t *testing.T) {
+	now := time.Unix(900_000, 0)
+	expires := now.Add(42 * time.Minute).Unix()
+	in := withCache(t, &PromptCache{
+		Warm: true, CachingObserved: true, TTL: "1h",
+		ExpiresAt: &expires, HitRatio: ptr(0.91), Requests: 14,
+	})
+	out := Render(in, testOptions(), gitInfo{}, now)
+	if !strings.Contains(out, "cache 91% 42m/1h") {
+		t.Errorf("want hit ratio and remaining lifetime, got:\n%s", out)
+	}
+}
+
+func TestRenderCacheCold(t *testing.T) {
+	in := withCache(t, &PromptCache{
+		Warm: false, CachingObserved: true, TTL: "5m",
+		HitRatio: ptr(0.42), Misses: 2,
+	})
+	out := Render(in, testOptions(), gitInfo{}, time.Unix(900_000, 0))
+	if !strings.Contains(out, "cache 42% cold miss 2") {
+		t.Errorf("want a cold cache with its miss count, got:\n%s", out)
+	}
+}
+
+func TestRenderCacheNotObserved(t *testing.T) {
+	in := withCache(t, &PromptCache{Warm: false, CachingObserved: false})
+	out := Render(in, testOptions(), gitInfo{}, time.Unix(900_000, 0))
+	if !strings.Contains(out, "cache off") {
+		t.Errorf("want the cache reported as off, got:\n%s", out)
+	}
+}
+
+func TestRenderCacheAbsent(t *testing.T) {
+	in := fullInput(t) // no prompt_cache in the payload
+	if strings.Contains(Render(in, testOptions(), gitInfo{}, time.Now()), "cache") {
+		t.Error("the cache segment should be omitted before the first API response")
+	}
+}
+
+func TestRenderCacheWithoutHitRatio(t *testing.T) {
+	// hit_ratio is null while the token counts are all zero.
+	in := withCache(t, &PromptCache{Warm: true, CachingObserved: true, TTL: "5m"})
+	out := Render(in, testOptions(), gitInfo{}, time.Unix(900_000, 0))
+	if !strings.Contains(out, "cache 5m") {
+		t.Errorf("want the lifetime alone when the ratio is unknown, got:\n%s", out)
+	}
+}
+
+func TestCacheColor(t *testing.T) {
+	// Higher is better, the opposite of usageColor.
+	tests := []struct {
+		pct  float64
+		want string
+	}{
+		{95, ansiGreen},
+		{80, ansiGreen},
+		{60, ansiYellow},
+		{50, ansiYellow},
+		{10, ansiRed},
+	}
+	for _, tt := range tests {
+		if got := cacheColor(tt.pct); got != tt.want {
+			t.Errorf("cacheColor(%v) = %q, want %q", tt.pct, got, tt.want)
+		}
+	}
+}
+
+func ptr[T any](v T) *T { return &v }

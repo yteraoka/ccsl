@@ -124,6 +124,9 @@ func (r *renderer) secondLine() string {
 	var segs []string
 
 	segs = append(segs, r.contextSegment())
+	if c := r.cacheSegment(); c != "" {
+		segs = append(segs, c)
+	}
 	if rl := r.rateLimitSegments(); len(rl) > 0 {
 		segs = append(segs, rl...)
 	}
@@ -260,6 +263,61 @@ func (r *renderer) contextSegment() string {
 		s += " " + r.p.paint(ansiRed, "⚠")
 	}
 	return r.icon("🧠", "ctx") + s
+}
+
+// cacheSegment reports the prompt cache: how much of the session's input came
+// from cache, how long the warm prefix has left, and whether any request had to
+// re-process content the cache already held.
+func (r *renderer) cacheSegment() string {
+	pc := r.in.PromptCache
+	if pc == nil {
+		return ""
+	}
+	icon := r.icon("💾", "cache")
+	if !pc.CachingObserved {
+		// Caching is off, or the provider does not report cache tokens.
+		return icon + r.p.paint(ansiGray, "off")
+	}
+
+	var parts []string
+	if pc.HitRatio != nil {
+		hit := *pc.HitRatio * 100
+		parts = append(parts, r.p.paint(cacheColor(hit), formatPercent(hit)))
+	}
+	if pc.Warm {
+		// "12m/1h" reads as 12 minutes left of a one-hour cache lifetime.
+		life := pc.TTL
+		if pc.ExpiresAt != nil {
+			if left := formatResetIn(*pc.ExpiresAt, r.now); left != "" {
+				life = strings.TrimSuffix(left+"/"+pc.TTL, "/")
+			}
+		}
+		if life != "" {
+			parts = append(parts, r.p.paint(ansiGray, life))
+		}
+	} else {
+		parts = append(parts, r.p.paint(ansiYellow, "cold"))
+	}
+	if pc.Misses > 0 {
+		parts = append(parts, r.p.paint(ansiRed, fmt.Sprintf("miss %d", pc.Misses)))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return icon + strings.Join(parts, " ")
+}
+
+// cacheColor grades a cache hit ratio, where higher is better — the opposite
+// direction from usageColor.
+func cacheColor(pct float64) string {
+	switch {
+	case pct >= 80:
+		return ansiGreen
+	case pct >= 50:
+		return ansiYellow
+	default:
+		return ansiRed
+	}
 }
 
 // rateLimitSegments renders the subscription windows, each with its usage and

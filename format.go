@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,7 +75,8 @@ func formatResetIn(resetsAt int64, now time.Time) string {
 		return ""
 	}
 	if d < time.Hour {
-		return fmt.Sprintf("%dm", int(d.Minutes())+1)
+		// Round up so a window with any time left never reads as "0m".
+		return fmt.Sprintf("%dm", int(math.Ceil(d.Minutes())))
 	}
 	if d < 24*time.Hour {
 		return fmt.Sprintf("%dh%02dm", int(d.Hours()), int(d.Minutes())%60)

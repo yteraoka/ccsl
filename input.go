@@ -19,9 +19,10 @@ type Input struct {
 
 	Exceeds200kTokens bool `json:"exceeds_200k_tokens"`
 
-	RateLimits *RateLimits `json:"rate_limits"`
-	PR         *PR         `json:"pr"`
-	Worktree   *Worktree   `json:"worktree"`
+	PromptCache *PromptCache `json:"prompt_cache"`
+	RateLimits  *RateLimits  `json:"rate_limits"`
+	PR          *PR          `json:"pr"`
+	Worktree    *Worktree    `json:"worktree"`
 }
 
 type Model struct {
@@ -65,6 +66,23 @@ type Usage struct {
 	OutputTokens             int `json:"output_tokens"`
 	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
 	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
+}
+
+// PromptCache summarizes how the main conversation is using the prompt cache.
+// It is absent until the first API response of the session. The last_miss_cause
+// and miss_causes objects are not declared: the status line reports that misses
+// happened, not why.
+type PromptCache struct {
+	Warm             bool     `json:"warm"`
+	CachingObserved  bool     `json:"caching_observed"`
+	TTL              string   `json:"ttl"`
+	ExpiresAt        *int64   `json:"expires_at"`
+	Requests         int      `json:"requests"`
+	Misses           int      `json:"misses"`
+	ExpectedRebuilds int      `json:"expected_rebuilds"`
+	HitRatio         *float64 `json:"hit_ratio"`
+	CacheWriteTokens int      `json:"cache_write_tokens"`
+	LastMissAt       *int64   `json:"last_miss_at"`
 }
 
 type RateLimits struct {

@@ -90,6 +90,8 @@ func TestFormatResetIn(t *testing.T) {
 		{0, ""},
 		{now.Unix() - 60, ""}, // already reset
 		{now.Add(90 * time.Second).Unix(), "2m"},
+		{now.Add(42 * time.Minute).Unix(), "42m"}, // exact minutes are not rounded up
+		{now.Add(1 * time.Second).Unix(), "1m"},
 		{now.Add(2*time.Hour + 10*time.Minute).Unix(), "2h10m"},
 		{now.Add(50 * time.Hour).Unix(), "2d2h"},
 	}
