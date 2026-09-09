@@ -39,7 +39,9 @@ func main() {
 
 	opt.Color = !*noColor && os.Getenv("NO_COLOR") == ""
 	opt.Emoji = !*noEmoji
-	opt.Links = !*noLinks && opt.Color
+	// Hyperlinks are independent of color: a terminal with colors turned off
+	// can still make the PR clickable.
+	opt.Links = !*noLinks
 	opt.GitDirty = !*noGitDirty
 	opt.SingleLine = *oneLine
 	opt.BarWidth = *barWidth
