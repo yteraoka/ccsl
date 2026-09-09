@@ -75,8 +75,8 @@ func TestRenderThreeLinesByDefault(t *testing.T) {
 	if len(rows) != 3 {
 		t.Fatalf("want 3 rows, got %d:\n%s", len(rows), out)
 	}
-	if !strings.HasSuffix(rows[2], "id 2fa45908-49bb-4048-b74c-e58d273f075a") {
-		t.Errorf("want the full session id last on row 3, got %q", rows[2])
+	if !strings.HasPrefix(rows[2], "id 2fa45908-49bb-4048-b74c-e58d273f075a") {
+		t.Errorf("want the full session id leading row 3, got %q", rows[2])
 	}
 	if !strings.Contains(rows[2], "session 1h15m") || !strings.Contains(rows[2], "api 12m03s") {
 		t.Errorf("want the elapsed times on row 3, got %q", rows[2])

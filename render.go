@@ -134,17 +134,18 @@ func (r *renderer) secondLine() string {
 	return joinNonEmpty(r.sepC, segs...)
 }
 
-// thirdLine carries the elapsed times and the session id. They sit apart from
-// the second row to keep it from overflowing, and the id last so the full UUID
-// survives on the row least likely to be trimmed.
+// thirdLine carries the session id and the elapsed times. They sit apart from
+// the second row to keep it from overflowing, with the id leading so the full
+// UUID is the part that survives if the row is ever trimmed.
 func (r *renderer) thirdLine() string {
-	segs := []string{
-		r.icon("⏱️", "session") + r.p.paint(ansiBlue, formatDuration(r.in.Cost.TotalDurationMS)),
-		r.icon("⚡", "api") + r.p.paint(ansiPurple, formatDuration(r.in.Cost.TotalAPIDurationMS)),
-	}
+	var segs []string
 	if r.in.SessionID != "" {
 		segs = append(segs, r.icon("🆔", "id")+r.p.paint(ansiGray, r.in.SessionID))
 	}
+	segs = append(segs,
+		r.icon("⏱️", "session")+r.p.paint(ansiBlue, formatDuration(r.in.Cost.TotalDurationMS)),
+		r.icon("⚡", "api")+r.p.paint(ansiPurple, formatDuration(r.in.Cost.TotalAPIDurationMS)),
+	)
 	return joinNonEmpty(r.sepC, segs...)
 }
 
