@@ -64,12 +64,13 @@ func (r *renderer) icon(emoji, label string) string {
 	return label + " "
 }
 
-// Render produces the full status line: three rows joined by newlines, or a
-// single row when Options.SingleLine is set.
+// Render produces the full status line: four rows joined by newlines, or a
+// single row when Options.SingleLine is set. A row whose fields are all absent
+// is dropped rather than left blank.
 func Render(in *Input, opt Options, git gitInfo, now time.Time) string {
 	r := newRenderer(in, opt, git, now)
 
-	lines := []string{r.firstLine(), r.secondLine(), r.thirdLine()}
+	lines := []string{r.nameLine(), r.locationLine(), r.usageLine(), r.sessionLine()}
 
 	if opt.SingleLine {
 		return truncateToWidth(joinNonEmpty(r.sepC, lines...), opt.Columns)
@@ -80,9 +81,19 @@ func Render(in *Input, opt Options, git gitInfo, now time.Time) string {
 	return joinNonEmpty("\n", lines...)
 }
 
-// firstLine carries the "where am I" context: model, directory, branch,
+// nameLine carries the session name: the custom name from --name or /rename,
+// or the AI-generated title. The payload omits it when the session has neither,
+// and then so does the status line.
+func (r *renderer) nameLine() string {
+	if r.in.SessionName == "" {
+		return ""
+	}
+	return r.icon("🏷️", "name") + r.p.paint(ansiBold, r.in.SessionName)
+}
+
+// locationLine carries the "where am I" context: model, directory, branch,
 // worktree and pull request.
-func (r *renderer) firstLine() string {
+func (r *renderer) locationLine() string {
 	var segs []string
 	dirIdx := -1
 
@@ -109,7 +120,7 @@ func (r *renderer) firstLine() string {
 	}
 	// Too wide: re-render the directory with whatever budget the other
 	// segments leave it, keeping its trailing components. Below minDirWidth
-	// the path stops being recognizable, so the caller trims the line instead.
+	// the path stops being recognizable, so Render trims the row instead.
 	budget := r.opt.Columns - (displayWidth(line) - displayWidth(r.dirText(0)))
 	if budget < minDirWidth {
 		budget = minDirWidth
@@ -118,30 +129,35 @@ func (r *renderer) firstLine() string {
 	return strings.Join(segs, r.sepC)
 }
 
-// secondLine carries the "what is it costing" context: context window, rate
-// limits, money and time.
-func (r *renderer) secondLine() string {
+// usageLine carries the "what is it costing" context: context window, prompt
+// cache, rate limits and money.
+func (r *renderer) usageLine() string {
 	var segs []string
 
 	segs = append(segs, r.contextSegment())
+	if c := r.cacheSegment(); c != "" {
+		segs = append(segs, c)
+	}
 	if rl := r.rateLimitSegments(); len(rl) > 0 {
 		segs = append(segs, rl...)
 	}
+	segs = append(segs, r.icon("💰", "cost")+r.p.paint(ansiYellow, formatCost(r.in.Cost.TotalCostUSD)))
+	return joinNonEmpty(r.sepC, segs...)
+}
+
+// sessionLine carries the session id and the elapsed times. They sit apart from
+// the usage row to keep it from overflowing, with the id leading so the full
+// UUID is the part that survives if the row is ever trimmed.
+func (r *renderer) sessionLine() string {
+	var segs []string
+	if r.in.SessionID != "" {
+		segs = append(segs, r.icon("🆔", "id")+r.p.paint(ansiGray, r.in.SessionID))
+	}
 	segs = append(segs,
-		r.icon("💰", "cost")+r.p.paint(ansiYellow, formatCost(r.in.Cost.TotalCostUSD)),
 		r.icon("⏱️", "session")+r.p.paint(ansiBlue, formatDuration(r.in.Cost.TotalDurationMS)),
 		r.icon("⚡", "api")+r.p.paint(ansiPurple, formatDuration(r.in.Cost.TotalAPIDurationMS)),
 	)
 	return joinNonEmpty(r.sepC, segs...)
-}
-
-// thirdLine carries the session id on a row of its own, so the full UUID
-// survives the width trimming the busier rows are subject to.
-func (r *renderer) thirdLine() string {
-	if r.in.SessionID == "" {
-		return ""
-	}
-	return r.icon("🆔", "id") + r.p.paint(ansiGray, r.in.SessionID)
 }
 
 func (r *renderer) dirText(maxWidth int) string {
@@ -260,6 +276,61 @@ func (r *renderer) contextSegment() string {
 		s += " " + r.p.paint(ansiRed, "⚠")
 	}
 	return r.icon("🧠", "ctx") + s
+}
+
+// cacheSegment reports the prompt cache: how much of the session's input came
+// from cache, how long the warm prefix has left, and whether any request had to
+// re-process content the cache already held.
+func (r *renderer) cacheSegment() string {
+	pc := r.in.PromptCache
+	if pc == nil {
+		return ""
+	}
+	icon := r.icon("💾", "cache")
+	if !pc.CachingObserved {
+		// Caching is off, or the provider does not report cache tokens.
+		return icon + r.p.paint(ansiGray, "off")
+	}
+
+	var parts []string
+	if pc.HitRatio != nil {
+		hit := *pc.HitRatio * 100
+		parts = append(parts, r.p.paint(cacheColor(hit), formatPercent(hit)))
+	}
+	if pc.Warm {
+		// "12m/1h" reads as 12 minutes left of a one-hour cache lifetime.
+		life := pc.TTL
+		if pc.ExpiresAt != nil {
+			if left := formatResetIn(*pc.ExpiresAt, r.now); left != "" {
+				life = strings.TrimSuffix(left+"/"+pc.TTL, "/")
+			}
+		}
+		if life != "" {
+			parts = append(parts, r.p.paint(ansiGray, life))
+		}
+	} else {
+		parts = append(parts, r.p.paint(ansiYellow, "cold"))
+	}
+	if pc.Misses > 0 {
+		parts = append(parts, r.p.paint(ansiRed, fmt.Sprintf("miss %d", pc.Misses)))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return icon + strings.Join(parts, " ")
+}
+
+// cacheColor grades a cache hit ratio, where higher is better — the opposite
+// direction from usageColor.
+func cacheColor(pct float64) string {
+	switch {
+	case pct >= 80:
+		return ansiGreen
+	case pct >= 50:
+		return ansiYellow
+	default:
+		return ansiRed
+	}
 }
 
 // rateLimitSegments renders the subscription windows, each with its usage and

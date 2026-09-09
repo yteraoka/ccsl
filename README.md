@@ -1,35 +1,38 @@
 # ccsl
 
 `ccsl` (**c**laude **c**ode **s**tatus **l**ine) は [Claude Code の status line](https://code.claude.com/docs/en/statusline.md) を描画する Go 製コマンドです。
-Claude Code が stdin に流すセッション JSON を読み、3 行のステータスラインを stdout に出力します。
+Claude Code が stdin に流すセッション JSON を読み、4 行のステータスラインを stdout に出力します。
 
 ```
+🏷️ statusline の実装
 🤖 Opus │ 📁 ~/ghq/github.com/yteraoka/ccsl │ 🌿 main✱ ↑2 │ 🌳 my-feature ← main │ 🔗 PR #1234 👀
-🧠 ████░░░░░░ 43% (85.7k/200k) │ ⏳ 5h 24% 2h10m │ 📅 7d 91% 3d4h │ 💰 $1.23 │ ⏱️ 1h15m │ ⚡ 12m03s
-🆔 2fa45908-49bb-4048-b74c-e58d273f075a
+🧠 ████░░░░░░ 43% (85.7k/200k) │ 💾 91% 42m/1h │ ⏳ 5h 24% 2h10m │ 📅 7d 91% 3d4h │ 💰 $1.23
+🆔 2fa45908-49bb-4048-b74c-e58d273f075a │ ⏱️ 1h15m │ ⚡ 12m03s
 ```
 
-1 行目に「どこで作業しているか」、2 行目に「どれだけ消費しているか」、3 行目にセッション ID を表示します。
+1 行目にセッション名、2 行目に「どこで作業しているか」、3 行目に「どれだけ消費しているか」、4 行目にセッション ID と経過時間を表示します。
 
 ## 表示内容
 
 | | 項目 | 説明 |
 |---|---|---|
+| 🏷️ | セッション名 | `--name` / `/rename` で付けた名前、または AI が生成したタイトル |
 | 🤖 | モデル名 | `model.display_name` |
 | 📁 | 作業ディレクトリ | `$HOME` は `~` に短縮。幅が足りなければ `…/末尾` に省略 |
 | 🌿 | git ブランチ | `git` から取得。`✱` = 未コミットの変更、`↑`/`↓` = upstream との差分。detached HEAD は `@abc1234` |
 | 🌳 | git worktree | worktree セッション名と分岐元ブランチ (`← main`)。通常の linked worktree は `workspace.git_worktree` |
 | 🔗 | Pull Request | `pr.number` / `pr.url`。OSC 8 でクリック可能。レビュー状態は ✅ approved / ❌ changes\_requested / 👀 pending / 📝 draft。GitLab の場合は `MR !123` |
 | 🧠 | トークン消費率 | コンテキストウィンドウ使用率のバー + % + 実トークン数。70% で黄、90% で赤。200k 超は `⚠` |
+| 💾 | プロンプトキャッシュ | ヒット率 + キャッシュの残り寿命（`42m/1h` = 1 時間の TTL のうち残り 42 分）。ヒット率は 80% 以上で緑、50% 以上で黄、それ未満は赤。キャッシュが切れていれば `cold`、ミスがあれば `miss N`、キャッシュが使われていなければ `off` |
 | ⏳ | 5 時間リミット | 使用率と、リセットまでの残り時間 |
 | 📅 | 7 日リミット | 同上 |
 | 💳 | スペンドリミット | Claude apps gateway 配下の場合のみ |
 | 💰 | コスト | `cost.total_cost_usd`（クライアント側の概算） |
 | ⏱️ | セッション継続時間 | `cost.total_duration_ms` |
 | ⚡ | API 合計時間 | `cost.total_api_duration_ms` |
-| 🆔 | セッション ID | 3 行目に `session_id` を省略せず全体表示 |
+| 🆔 | セッション ID | `session_id` を省略せず全体表示 |
 
-JSON に含まれない項目（PR がない、worktree ではない、サブスクリプションのレート制限が届いていない等）は自動的に省略されます。
+JSON に含まれない項目（名前が付いていない、PR がない、worktree ではない、サブスクリプションのレート制限が届いていない等）は自動的に省略されます。行の中身がすべて無い場合はその行ごと出力しません。
 
 ## インストール
 
@@ -86,7 +89,7 @@ go build -o ccsl .
 
 | フラグ | 説明 |
 |---|---|
-| `--one-line` | 3 行ではなく 1 行にまとめる |
+| `--one-line` | 4 行ではなく 1 行にまとめる |
 | `--no-emoji` | 絵文字の代わりにテキストラベル (`model` / `dir` / `ctx` …) を使う |
 | `--no-color` | ANSI カラーを出力しない（環境変数 `NO_COLOR` でも同じ） |
 | `--no-links` | PR の OSC 8 クリッカブルリンクを無効化（未対応ターミナル向け） |
@@ -115,6 +118,7 @@ echo '{
 - Claude Code はアシスタントのメッセージごとにこのコマンドを実行するため、git 呼び出しには 400ms のタイムアウトを設けています。取得できなければブランチ表示を省略するだけで、ステータスラインが止まることはありません。
 - ターミナル幅は Claude Code が渡す環境変数 `COLUMNS` から読み取り、はみ出す場合はディレクトリを省略、それでも収まらなければ行末を `…` で切り詰めます。
 - `rate_limits` は Claude.ai Pro / Max のサブスクリプションで、かつセッション最初の API 応答以降にのみ届きます。
+- `prompt_cache` もセッション最初の API 応答以降にのみ届きます（メインの会話のみが対象で、サブエージェントの分は含まれません）。
 
 ## 開発
 

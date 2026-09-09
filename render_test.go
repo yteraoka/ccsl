@@ -20,6 +20,7 @@ func fullInput(t *testing.T) *Input {
 	const payload = `{
 	  "cwd": "/home/u/src/app",
 	  "session_id": "2fa45908-49bb-4048-b74c-e58d273f075a",
+	  "session_name": "statusline work",
 	  "model": {"id": "claude-opus-5", "display_name": "Opus"},
 	  "workspace": {"current_dir": "/home/u/src/app", "project_dir": "/home/u/src/app"},
 	  "cost": {"total_cost_usd": 1.2345, "total_duration_ms": 4500000, "total_api_duration_ms": 723000},
@@ -68,15 +69,27 @@ func TestRenderIncludesEveryRequestedField(t *testing.T) {
 	}
 }
 
-func TestRenderThreeLinesByDefault(t *testing.T) {
+func TestRenderFourLinesByDefault(t *testing.T) {
 	in := fullInput(t)
 	out := Render(in, testOptions(), gitInfo{Branch: "main"}, time.Unix(900_000, 0))
 	rows := strings.Split(out, "\n")
-	if len(rows) != 3 {
-		t.Fatalf("want 3 rows, got %d:\n%s", len(rows), out)
+	if len(rows) != 4 {
+		t.Fatalf("want 4 rows, got %d:\n%s", len(rows), out)
 	}
-	if !strings.HasPrefix(rows[2], "id 2fa45908-49bb-4048-b74c-e58d273f075a") {
-		t.Errorf("want the full session id on row 3, got %q", rows[2])
+	if rows[0] != "name statusline work" {
+		t.Errorf("want the session name alone on row 1, got %q", rows[0])
+	}
+	if !strings.HasPrefix(rows[1], "model Opus") {
+		t.Errorf("want the model leading row 2, got %q", rows[1])
+	}
+	if !strings.HasPrefix(rows[3], "id 2fa45908-49bb-4048-b74c-e58d273f075a") {
+		t.Errorf("want the full session id leading row 4, got %q", rows[3])
+	}
+	if !strings.Contains(rows[3], "session 1h15m") || !strings.Contains(rows[3], "api 12m03s") {
+		t.Errorf("want the elapsed times on row 4, got %q", rows[3])
+	}
+	if strings.Contains(rows[2], "session 1h15m") || strings.Contains(rows[2], "api 12m03s") {
+		t.Errorf("elapsed times should have left the usage row, got %q", rows[2])
 	}
 
 	opt := testOptions()
@@ -84,6 +97,19 @@ func TestRenderThreeLinesByDefault(t *testing.T) {
 	out = Render(in, opt, gitInfo{Branch: "main"}, time.Unix(900_000, 0))
 	if strings.Contains(out, "\n") {
 		t.Errorf("one-line mode emitted a newline:\n%s", out)
+	}
+}
+
+func TestRenderOmitsTheNameRowWhenUnnamed(t *testing.T) {
+	in := fullInput(t)
+	in.SessionName = ""
+	out := Render(in, testOptions(), gitInfo{Branch: "main"}, time.Unix(900_000, 0))
+	rows := strings.Split(out, "\n")
+	if len(rows) != 3 {
+		t.Fatalf("want the name row dropped, got %d rows:\n%s", len(rows), out)
+	}
+	if !strings.HasPrefix(rows[0], "model Opus") {
+		t.Errorf("want the model leading row 1, got %q", rows[0])
 	}
 }
 
@@ -129,7 +155,7 @@ func TestRenderExpiredRateLimitWindowDropsCountdown(t *testing.T) {
 	}
 }
 
-func TestFirstLineShrinksDirectoryToFitColumns(t *testing.T) {
+func TestLocationRowShrinksDirectoryToFitColumns(t *testing.T) {
 	t.Setenv("HOME", "/home/u")
 	in := fullInput(t)
 	in.Workspace.CurrentDir = "/home/u/a/very/deeply/nested/project/directory"
@@ -137,13 +163,13 @@ func TestFirstLineShrinksDirectoryToFitColumns(t *testing.T) {
 	opt := testOptions()
 	opt.Columns = 60
 	out := Render(in, opt, gitInfo{Branch: "main"}, time.Unix(900_000, 0))
-	first := strings.SplitN(out, "\n", 2)[0]
+	location := strings.Split(out, "\n")[1]
 
-	if displayWidth(first) > opt.Columns {
-		t.Errorf("first line is %d cells wide, want <= %d:\n%s", displayWidth(first), opt.Columns, first)
+	if displayWidth(location) > opt.Columns {
+		t.Errorf("location row is %d cells wide, want <= %d:\n%s", displayWidth(location), opt.Columns, location)
 	}
-	if !strings.Contains(first, "…") {
-		t.Errorf("expected an elided path, got:\n%s", first)
+	if !strings.Contains(location, "…") {
+		t.Errorf("expected an elided path, got:\n%s", location)
 	}
 }
 
@@ -182,3 +208,79 @@ func TestGitWorktreeFallsBackToWorkspaceField(t *testing.T) {
 		t.Error("want workspace.git_worktree rendered when worktree.* is absent")
 	}
 }
+
+func withCache(t *testing.T, pc *PromptCache) *Input {
+	t.Helper()
+	in := fullInput(t)
+	in.PromptCache = pc
+	return in
+}
+
+func TestRenderCacheWarm(t *testing.T) {
+	now := time.Unix(900_000, 0)
+	expires := now.Add(42 * time.Minute).Unix()
+	in := withCache(t, &PromptCache{
+		Warm: true, CachingObserved: true, TTL: "1h",
+		ExpiresAt: &expires, HitRatio: ptr(0.91), Requests: 14,
+	})
+	out := Render(in, testOptions(), gitInfo{}, now)
+	if !strings.Contains(out, "cache 91% 42m/1h") {
+		t.Errorf("want hit ratio and remaining lifetime, got:\n%s", out)
+	}
+}
+
+func TestRenderCacheCold(t *testing.T) {
+	in := withCache(t, &PromptCache{
+		Warm: false, CachingObserved: true, TTL: "5m",
+		HitRatio: ptr(0.42), Misses: 2,
+	})
+	out := Render(in, testOptions(), gitInfo{}, time.Unix(900_000, 0))
+	if !strings.Contains(out, "cache 42% cold miss 2") {
+		t.Errorf("want a cold cache with its miss count, got:\n%s", out)
+	}
+}
+
+func TestRenderCacheNotObserved(t *testing.T) {
+	in := withCache(t, &PromptCache{Warm: false, CachingObserved: false})
+	out := Render(in, testOptions(), gitInfo{}, time.Unix(900_000, 0))
+	if !strings.Contains(out, "cache off") {
+		t.Errorf("want the cache reported as off, got:\n%s", out)
+	}
+}
+
+func TestRenderCacheAbsent(t *testing.T) {
+	in := fullInput(t) // no prompt_cache in the payload
+	if strings.Contains(Render(in, testOptions(), gitInfo{}, time.Now()), "cache") {
+		t.Error("the cache segment should be omitted before the first API response")
+	}
+}
+
+func TestRenderCacheWithoutHitRatio(t *testing.T) {
+	// hit_ratio is null while the token counts are all zero.
+	in := withCache(t, &PromptCache{Warm: true, CachingObserved: true, TTL: "5m"})
+	out := Render(in, testOptions(), gitInfo{}, time.Unix(900_000, 0))
+	if !strings.Contains(out, "cache 5m") {
+		t.Errorf("want the lifetime alone when the ratio is unknown, got:\n%s", out)
+	}
+}
+
+func TestCacheColor(t *testing.T) {
+	// Higher is better, the opposite of usageColor.
+	tests := []struct {
+		pct  float64
+		want string
+	}{
+		{95, ansiGreen},
+		{80, ansiGreen},
+		{60, ansiYellow},
+		{50, ansiYellow},
+		{10, ansiRed},
+	}
+	for _, tt := range tests {
+		if got := cacheColor(tt.pct); got != tt.want {
+			t.Errorf("cacheColor(%v) = %q, want %q", tt.pct, got, tt.want)
+		}
+	}
+}
+
+func ptr[T any](v T) *T { return &v }
