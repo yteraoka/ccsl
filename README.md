@@ -129,6 +129,12 @@ golangci-lint run
 
 `mise.lock` に各プラットフォームのチェックサムを記録しているので、CI もローカルも同じバイナリを取得します。バージョンを上げるときは `mise.toml` を編集してから `mise lock` を実行してください。
 
+GitHub Actions のアクションは [pinact](https://github.com/suzuki-shunsuke/pinact) でコミット SHA に固定しています。ワークフローを追加・更新したら実行してください。
+
+```sh
+pinact run
+```
+
 ## CI / リリース
 
 - **CI** (`.github/workflows/ci.yml`) — Pull Request と `main` への push で、`go build` / `go vet` / `go test -race -cover` と `golangci-lint run` を実行します。
