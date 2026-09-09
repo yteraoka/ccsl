@@ -36,6 +36,14 @@ JSON に含まれない項目（名前が付いていない、PR がない、wor
 
 ## インストール
 
+[mise](https://mise.jdx.dev/) で GitHub Release のバイナリを入れる場合:
+
+```sh
+mise use -g github:yteraoka/ccsl@1.0.0
+```
+
+Go ツールチェインがある場合:
+
 ```sh
 go install github.com/yteraoka/ccsl@latest
 ```
