@@ -118,8 +118,8 @@ func (r *renderer) firstLine() string {
 	return strings.Join(segs, r.sepC)
 }
 
-// secondLine carries the "what is it costing" context: context window, rate
-// limits, money and time.
+// secondLine carries the "what is it costing" context: context window, prompt
+// cache, rate limits and money.
 func (r *renderer) secondLine() string {
 	var segs []string
 
@@ -130,21 +130,22 @@ func (r *renderer) secondLine() string {
 	if rl := r.rateLimitSegments(); len(rl) > 0 {
 		segs = append(segs, rl...)
 	}
-	segs = append(segs,
-		r.icon("💰", "cost")+r.p.paint(ansiYellow, formatCost(r.in.Cost.TotalCostUSD)),
-		r.icon("⏱️", "session")+r.p.paint(ansiBlue, formatDuration(r.in.Cost.TotalDurationMS)),
-		r.icon("⚡", "api")+r.p.paint(ansiPurple, formatDuration(r.in.Cost.TotalAPIDurationMS)),
-	)
+	segs = append(segs, r.icon("💰", "cost")+r.p.paint(ansiYellow, formatCost(r.in.Cost.TotalCostUSD)))
 	return joinNonEmpty(r.sepC, segs...)
 }
 
-// thirdLine carries the session id on a row of its own, so the full UUID
-// survives the width trimming the busier rows are subject to.
+// thirdLine carries the elapsed times and the session id. They sit apart from
+// the second row to keep it from overflowing, and the id last so the full UUID
+// survives on the row least likely to be trimmed.
 func (r *renderer) thirdLine() string {
-	if r.in.SessionID == "" {
-		return ""
+	segs := []string{
+		r.icon("⏱️", "session") + r.p.paint(ansiBlue, formatDuration(r.in.Cost.TotalDurationMS)),
+		r.icon("⚡", "api") + r.p.paint(ansiPurple, formatDuration(r.in.Cost.TotalAPIDurationMS)),
 	}
-	return r.icon("🆔", "id") + r.p.paint(ansiGray, r.in.SessionID)
+	if r.in.SessionID != "" {
+		segs = append(segs, r.icon("🆔", "id")+r.p.paint(ansiGray, r.in.SessionID))
+	}
+	return joinNonEmpty(r.sepC, segs...)
 }
 
 func (r *renderer) dirText(maxWidth int) string {
