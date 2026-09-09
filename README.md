@@ -155,7 +155,7 @@ pinact run
 
 リリースの流れは次のとおりです。
 
-1. `main` に変更が入ると tagpr が「次のバージョン」のリリース PR を作成・更新します（CHANGELOG も更新）。
+1. `main` に変更が入ると tagpr が「次のバージョン」のリリース PR を作成・更新します（CHANGELOG と、上のインストール手順に書かれている mise のバージョンも更新）。
 2. そのリリース PR をマージすると tagpr が `vX.Y.Z` のタグを打ちます。メジャー / マイナーを上げたい場合は、PR に `major` / `minor` ラベルを付けてからマージします。
 3. タグの push で Release ワークフローが動き、goreleaser が成果物付きの GitHub Release を公開します。
 
@@ -180,6 +180,8 @@ git push origin v0.1.0
 App に必要な権限は Contents: Read and write / Pull requests: Read and write / Issues: Read-only です。
 
 なお GitHub Release は goreleaser が作るため、`.tagpr` では `release = false` にしてあります。バージョンはタグからのみ決まり（`versionFile = -`）、ビルド時に `-X main.version` で埋め込まれます。
+
+README のインストール手順に書かれているバージョンは、tagpr がリリース PR を作るときに `tagpr.command` から `scripts/update-readme-version` を呼んで書き換えます。手で直す必要はありません。
 
 リリース前に成果物を確認するには:
 

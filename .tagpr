@@ -5,6 +5,9 @@
 	versionFile = -
 	vPrefix = true
 	changelog = true
+	# Keeps the mise install command in README.md pointing at the release
+	# being prepared.
+	command = ./scripts/update-readme-version
 	# goreleaser owns the GitHub Release: it publishes the binaries and the
 	# release notes when the tag lands. tagpr only creates the tag.
 	release = false
