@@ -102,7 +102,7 @@ func bar(pct float64, width int) string {
 
 // shortenPath replaces $HOME with ~ and, when the result is still longer than
 // max, keeps the trailing path segments behind an ellipsis.
-func shortenPath(p string, max int) string {
+func shortenPath(p string, maxWidth int) string {
 	if p == "" {
 		return ""
 	}
@@ -114,20 +114,20 @@ func shortenPath(p string, max int) string {
 			p = "~" + p[len(home):]
 		}
 	}
-	if max <= 0 || displayWidth(p) <= max {
+	if maxWidth <= 0 || displayWidth(p) <= maxWidth {
 		return p
 	}
 	parts := strings.Split(p, string(filepath.Separator))
 	for i := 1; i < len(parts); i++ {
 		candidate := "…" + string(filepath.Separator) + strings.Join(parts[i:], string(filepath.Separator))
-		if displayWidth(candidate) <= max {
+		if displayWidth(candidate) <= maxWidth {
 			return candidate
 		}
 	}
-	// A single segment longer than max: keep its tail.
+	// A single segment longer than maxWidth: keep its tail.
 	last := parts[len(parts)-1]
 	r := []rune(last)
-	for len(r) > 0 && displayWidth("…"+string(r)) > max {
+	for len(r) > 0 && displayWidth("…"+string(r)) > maxWidth {
 		r = r[1:]
 	}
 	return "…" + string(r)

@@ -118,9 +118,31 @@ echo '{
 
 ## 開発
 
+Go / golangci-lint / goreleaser のバージョンは [mise](https://mise.jdx.dev/) で管理しています。
+
 ```sh
+mise install     # mise.toml / mise.lock のバージョンを揃える
 go test ./...
 go vet ./...
+golangci-lint run
+```
+
+`mise.lock` に各プラットフォームのチェックサムを記録しているので、CI もローカルも同じバイナリを取得します。バージョンを上げるときは `mise.toml` を編集してから `mise lock` を実行してください。
+
+## CI / リリース
+
+- **CI** (`.github/workflows/ci.yml`) — Pull Request と `main` への push で、`go build` / `go vet` / `go test -race -cover` と `golangci-lint run` を実行します。
+- **Release** (`.github/workflows/release.yml`) — `v*` のタグを push すると [goreleaser](https://goreleaser.com/) が linux / macOS / Windows の amd64・arm64 向けバイナリをビルドし、GitHub Release を作成します。
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+リリース前に成果物を確認するには:
+
+```sh
+goreleaser build --snapshot --clean
 ```
 
 ## License

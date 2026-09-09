@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs the Go version pinned in mise.toml.
+      - uses: jdx/mise-action@v4
+
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test -race -cover ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs the Go and golangci-lint versions pinned in mise.toml.
+      - uses: jdx/mise-action@v4
+
+      - run: golangci-lint run --timeout=5m

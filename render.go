@@ -144,12 +144,12 @@ func (r *renderer) thirdLine() string {
 	return r.icon("🆔", "id") + r.p.paint(ansiGray, r.in.SessionID)
 }
 
-func (r *renderer) dirText(max int) string {
-	return shortenPath(r.in.dir(), max)
+func (r *renderer) dirText(maxWidth int) string {
+	return shortenPath(r.in.dir(), maxWidth)
 }
 
-func (r *renderer) dirSegment(max int) string {
-	dir := r.dirText(max)
+func (r *renderer) dirSegment(maxWidth int) string {
+	dir := r.dirText(maxWidth)
 	if dir == "" {
 		return ""
 	}
