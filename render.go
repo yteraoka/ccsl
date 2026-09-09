@@ -64,12 +64,13 @@ func (r *renderer) icon(emoji, label string) string {
 	return label + " "
 }
 
-// Render produces the full status line: three rows joined by newlines, or a
-// single row when Options.SingleLine is set.
+// Render produces the full status line: four rows joined by newlines, or a
+// single row when Options.SingleLine is set. A row whose fields are all absent
+// is dropped rather than left blank.
 func Render(in *Input, opt Options, git gitInfo, now time.Time) string {
 	r := newRenderer(in, opt, git, now)
 
-	lines := []string{r.firstLine(), r.secondLine(), r.thirdLine()}
+	lines := []string{r.nameLine(), r.locationLine(), r.usageLine(), r.sessionLine()}
 
 	if opt.SingleLine {
 		return truncateToWidth(joinNonEmpty(r.sepC, lines...), opt.Columns)
@@ -80,9 +81,19 @@ func Render(in *Input, opt Options, git gitInfo, now time.Time) string {
 	return joinNonEmpty("\n", lines...)
 }
 
-// firstLine carries the "where am I" context: model, directory, branch,
+// nameLine carries the session name: the custom name from --name or /rename,
+// or the AI-generated title. The payload omits it when the session has neither,
+// and then so does the status line.
+func (r *renderer) nameLine() string {
+	if r.in.SessionName == "" {
+		return ""
+	}
+	return r.icon("🏷️", "name") + r.p.paint(ansiBold, r.in.SessionName)
+}
+
+// locationLine carries the "where am I" context: model, directory, branch,
 // worktree and pull request.
-func (r *renderer) firstLine() string {
+func (r *renderer) locationLine() string {
 	var segs []string
 	dirIdx := -1
 
@@ -109,7 +120,7 @@ func (r *renderer) firstLine() string {
 	}
 	// Too wide: re-render the directory with whatever budget the other
 	// segments leave it, keeping its trailing components. Below minDirWidth
-	// the path stops being recognizable, so the caller trims the line instead.
+	// the path stops being recognizable, so Render trims the row instead.
 	budget := r.opt.Columns - (displayWidth(line) - displayWidth(r.dirText(0)))
 	if budget < minDirWidth {
 		budget = minDirWidth
@@ -118,9 +129,9 @@ func (r *renderer) firstLine() string {
 	return strings.Join(segs, r.sepC)
 }
 
-// secondLine carries the "what is it costing" context: context window, prompt
+// usageLine carries the "what is it costing" context: context window, prompt
 // cache, rate limits and money.
-func (r *renderer) secondLine() string {
+func (r *renderer) usageLine() string {
 	var segs []string
 
 	segs = append(segs, r.contextSegment())
@@ -134,10 +145,10 @@ func (r *renderer) secondLine() string {
 	return joinNonEmpty(r.sepC, segs...)
 }
 
-// thirdLine carries the session id and the elapsed times. They sit apart from
-// the second row to keep it from overflowing, with the id leading so the full
+// sessionLine carries the session id and the elapsed times. They sit apart from
+// the usage row to keep it from overflowing, with the id leading so the full
 // UUID is the part that survives if the row is ever trimmed.
-func (r *renderer) thirdLine() string {
+func (r *renderer) sessionLine() string {
 	var segs []string
 	if r.in.SessionID != "" {
 		segs = append(segs, r.icon("🆔", "id")+r.p.paint(ansiGray, r.in.SessionID))

@@ -1,20 +1,22 @@
 # ccsl
 
 `ccsl` (**c**laude **c**ode **s**tatus **l**ine) は [Claude Code の status line](https://code.claude.com/docs/en/statusline.md) を描画する Go 製コマンドです。
-Claude Code が stdin に流すセッション JSON を読み、3 行のステータスラインを stdout に出力します。
+Claude Code が stdin に流すセッション JSON を読み、4 行のステータスラインを stdout に出力します。
 
 ```
+🏷️ statusline の実装
 🤖 Opus │ 📁 ~/ghq/github.com/yteraoka/ccsl │ 🌿 main✱ ↑2 │ 🌳 my-feature ← main │ 🔗 PR #1234 👀
 🧠 ████░░░░░░ 43% (85.7k/200k) │ 💾 91% 42m/1h │ ⏳ 5h 24% 2h10m │ 📅 7d 91% 3d4h │ 💰 $1.23
 🆔 2fa45908-49bb-4048-b74c-e58d273f075a │ ⏱️ 1h15m │ ⚡ 12m03s
 ```
 
-1 行目に「どこで作業しているか」、2 行目に「どれだけ消費しているか」、3 行目にセッション ID と経過時間を表示します。
+1 行目にセッション名、2 行目に「どこで作業しているか」、3 行目に「どれだけ消費しているか」、4 行目にセッション ID と経過時間を表示します。
 
 ## 表示内容
 
 | | 項目 | 説明 |
 |---|---|---|
+| 🏷️ | セッション名 | `--name` / `/rename` で付けた名前、または AI が生成したタイトル |
 | 🤖 | モデル名 | `model.display_name` |
 | 📁 | 作業ディレクトリ | `$HOME` は `~` に短縮。幅が足りなければ `…/末尾` に省略 |
 | 🌿 | git ブランチ | `git` から取得。`✱` = 未コミットの変更、`↑`/`↓` = upstream との差分。detached HEAD は `@abc1234` |
@@ -30,7 +32,7 @@ Claude Code が stdin に流すセッション JSON を読み、3 行のステ�
 | ⚡ | API 合計時間 | `cost.total_api_duration_ms` |
 | 🆔 | セッション ID | `session_id` を省略せず全体表示 |
 
-JSON に含まれない項目（PR がない、worktree ではない、サブスクリプションのレート制限が届いていない等）は自動的に省略されます。
+JSON に含まれない項目（名前が付いていない、PR がない、worktree ではない、サブスクリプションのレート制限が届いていない等）は自動的に省略されます。行の中身がすべて無い場合はその行ごと出力しません。
 
 ## インストール
 
@@ -87,7 +89,7 @@ go build -o ccsl .
 
 | フラグ | 説明 |
 |---|---|
-| `--one-line` | 3 行ではなく 1 行にまとめる |
+| `--one-line` | 4 行ではなく 1 行にまとめる |
 | `--no-emoji` | 絵文字の代わりにテキストラベル (`model` / `dir` / `ctx` …) を使う |
 | `--no-color` | ANSI カラーを出力しない（環境変数 `NO_COLOR` でも同じ） |
 | `--no-links` | PR の OSC 8 クリッカブルリンクを無効化（未対応ターミナル向け） |
