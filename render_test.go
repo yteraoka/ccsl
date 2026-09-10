@@ -284,3 +284,23 @@ func TestCacheColor(t *testing.T) {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+func TestRenderConfigDirOnlyWhenSet(t *testing.T) {
+	t.Setenv("HOME", "/home/u")
+	in := fullInput(t)
+	now := time.Unix(900_000, 0)
+
+	out := Render(in, testOptions(), gitInfo{}, now)
+	if strings.Contains(out, "config ") {
+		t.Errorf("want no config segment when CLAUDE_CONFIG_DIR is unset\ngot:\n%s", out)
+	}
+
+	opt := testOptions()
+	opt.ConfigDir = "/home/u/.claude-alt"
+	out = Render(in, opt, gitInfo{}, now)
+	rows := strings.Split(out, "\n")
+	last := rows[len(rows)-1]
+	if !strings.HasSuffix(last, "config ~/.claude-alt") {
+		t.Errorf("want the config dir at the end of the last row, got %q", last)
+	}
+}
