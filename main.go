@@ -46,6 +46,7 @@ func main() {
 	opt.SingleLine = *oneLine
 	opt.BarWidth = *barWidth
 	opt.Columns = envInt("COLUMNS")
+	opt.ConfigDir = os.Getenv("CLAUDE_CONFIG_DIR")
 
 	if err := run(os.Stdin, os.Stdout, opt); err != nil {
 		fmt.Fprintln(os.Stderr, "ccsl:", err)

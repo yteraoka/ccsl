@@ -16,6 +16,7 @@ type Options struct {
 	GitDirty   bool
 	BarWidth   int
 	Columns    int
+	ConfigDir  string
 }
 
 // minDirWidth is the narrowest elided path still worth showing.
@@ -157,7 +158,19 @@ func (r *renderer) sessionLine() string {
 		r.icon("⏱️", "session")+r.p.paint(ansiBlue, formatDuration(r.in.Cost.TotalDurationMS)),
 		r.icon("⚡", "api")+r.p.paint(ansiPurple, formatDuration(r.in.Cost.TotalAPIDurationMS)),
 	)
+	if c := r.configDirSegment(); c != "" {
+		segs = append(segs, c)
+	}
 	return joinNonEmpty(r.sepC, segs...)
+}
+
+// configDirSegment names the config directory, but only when
+// CLAUDE_CONFIG_DIR moved it off the default ~/.claude.
+func (r *renderer) configDirSegment() string {
+	if r.opt.ConfigDir == "" {
+		return ""
+	}
+	return r.icon("⚙️", "config") + r.p.paint(ansiGray, shortenPath(r.opt.ConfigDir, 0))
 }
 
 func (r *renderer) dirText(maxWidth int) string {
