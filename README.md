@@ -40,7 +40,7 @@ JSON に含まれない項目（名前が付いていない、PR がない、wor
 [mise](https://mise.jdx.dev/) で GitHub Release のバイナリを入れる場合:
 
 ```sh
-mise use -g github:yteraoka/ccsl@1.0.1
+mise use -g github:yteraoka/ccsl@1.0.2
 ```
 
 Go ツールチェインがある場合:
