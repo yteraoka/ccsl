@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.0.2](https://github.com/yteraoka/ccsl/compare/v1.0.1...v1.0.2) - 2026-09-10
+
+- Show CLAUDE_CONFIG_DIR on the session line by @yteraoka in https://github.com/yteraoka/ccsl/pull/15
+
 ## [v1.0.1](https://github.com/yteraoka/ccsl/compare/v1.0.0...v1.0.1) - 2026-09-09
 
 - README に mise でのインストール方法を追加し、バージョンを tagpr に更新させる by @yteraoka in https://github.com/yteraoka/ccsl/pull/11
