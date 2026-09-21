@@ -1,0 +1,67 @@
+name: renovate-lock
+
+# Renovate bumps the version in mise.toml but regularly fails to regenerate the
+# matching entry in mise.lock: it drops the checksum/url lines instead of
+# rewriting them. Every later `mise install` then runs in --locked mode and
+# dies with "No lockfile URL found", so all of CI fails on the Renovate PR.
+# This job repairs the lockfile on the PR branch and pushes it back.
+on:
+  pull_request:
+    paths:
+      - mise.toml
+      - mise.lock
+
+# The job authenticates as a GitHub App instead of using GITHUB_TOKEN, so the
+# workflow itself needs no write access.
+permissions:
+  contents: read
+
+concurrency:
+  group: renovate-lock-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  relock:
+    if: >-
+      github.event.pull_request.user.login == 'renovate[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      # A push with GITHUB_TOKEN does not start another workflow run, so the
+      # required checks would stay red and automerge would never fire. An App
+      # installation token does.
+      - name: Generate a token for the tagpr app
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TAGPR_APP_ID }}
+          private-key: ${{ secrets.TAGPR_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      # install: false because the tools cannot be installed until the lockfile
+      # is repaired - only mise itself is needed here.
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install: false
+          cache: false
+
+      # Writes checksums and download URLs for every locked platform without
+      # installing anything. The token only raises the GitHub API rate limit.
+      - run: mise lock
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Push the regenerated lockfile
+        run: |
+          if git diff --quiet -- mise.lock; then
+            echo "mise.lock is already in sync with mise.toml"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Regenerate mise.lock' -- mise.lock
+          git push
