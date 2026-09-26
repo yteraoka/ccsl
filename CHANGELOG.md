@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.1.1](https://github.com/yteraoka/ccsl/compare/v1.1.0...v1.1.1) - 2026-09-26
+
+- Update dependency pinact to v5 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/17
+- Renovate の PR で mise.lock を再生成する by @yteraoka in https://github.com/yteraoka/ccsl/pull/20
+- Update dependency goreleaser to v2.18.2 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/19
+- Update Songmu/tagpr action to v1.20.4 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/21
+- Update Songmu/tagpr action to v1.21.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/22
+- Update dependency golangci-lint to v2.14.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/23
+- model 表示の右に effort.level の値を表示する by @yteraoka in https://github.com/yteraoka/ccsl/pull/24
+
 ## [v1.0.2](https://github.com/yteraoka/ccsl/compare/v1.0.1...v1.0.2) - 2026-09-10
 
 - Show CLAUDE_CONFIG_DIR on the session line by @yteraoka in https://github.com/yteraoka/ccsl/pull/15
