@@ -304,3 +304,24 @@ func TestRenderConfigDirOnlyWhenSet(t *testing.T) {
 		t.Errorf("want the config dir at the end of the last row, got %q", last)
 	}
 }
+
+func TestRenderEffortLevel(t *testing.T) {
+	in := fullInput(t)
+	in.Effort = &Effort{Level: "high"}
+	out := Render(in, testOptions(), gitInfo{Branch: "main"}, time.Unix(900_000, 0))
+	rows := strings.Split(out, "\n")
+	if !strings.HasPrefix(rows[1], "model Opus (high)") {
+		t.Errorf("want model with effort level, got %q", rows[1])
+	}
+}
+
+func TestRenderEffortAbsent(t *testing.T) {
+	in := fullInput(t)
+	in.Effort = nil
+	out := Render(in, testOptions(), gitInfo{Branch: "main"}, time.Unix(900_000, 0))
+	rows := strings.Split(out, "\n")
+	modelPart := strings.Split(rows[1], " │ ")[0]
+	if modelPart != "model Opus" {
+		t.Errorf("want model without effort level, got %q", modelPart)
+	}
+}
