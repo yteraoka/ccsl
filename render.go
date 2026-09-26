@@ -99,7 +99,24 @@ func (r *renderer) locationLine() string {
 	dirIdx := -1
 
 	if name := r.in.Model.DisplayName; name != "" {
-		segs = append(segs, r.icon("🤖", "model")+r.p.paint(ansiBold+ansiCyan, name))
+		s := r.p.paint(ansiBold+ansiCyan, name)
+		if r.in.Effort != nil && r.in.Effort.Level != "" {
+			levelColor := ansiPurple
+			switch r.in.Effort.Level {
+			case "low":
+				levelColor = ansiGreen
+			case "medium":
+				levelColor = ansiYellow
+			case "high":
+				levelColor = ansiCyan
+			case "xhigh":
+				levelColor = ansiPurple
+			case "max":
+				levelColor = ansiRed
+			}
+			s += r.p.paint(levelColor, " ("+r.in.Effort.Level+")")
+		}
+		segs = append(segs, r.icon("🤖", "model")+s)
 	}
 	if dir := r.dirSegment(0); dir != "" {
 		dirIdx = len(segs)

@@ -13,6 +13,7 @@ type Input struct {
 	Version        string `json:"version"`
 
 	Model         Model         `json:"model"`
+	Effort        *Effort       `json:"effort"`
 	Workspace     Workspace     `json:"workspace"`
 	Cost          Cost          `json:"cost"`
 	ContextWindow ContextWindow `json:"context_window"`
@@ -28,6 +29,10 @@ type Input struct {
 type Model struct {
 	ID          string `json:"id"`
 	DisplayName string `json:"display_name"`
+}
+
+type Effort struct {
+	Level string `json:"level"`
 }
 
 type Workspace struct {
