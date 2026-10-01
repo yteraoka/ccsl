@@ -1,16 +1,17 @@
 # ccsl
 
 `ccsl` (**c**laude **c**ode **s**tatus **l**ine) は [Claude Code の status line](https://code.claude.com/docs/en/statusline.md) を描画する Go 製コマンドです。
-Claude Code が stdin に流すセッション JSON を読み、4 行のステータスラインを stdout に出力します。
+Claude Code が stdin に流すセッション JSON を読み、最大 5 行のステータスラインを stdout に出力します。
 
 ```
 🏷️ statusline の実装
 🤖 Opus │ 📁 ~/ghq/github.com/yteraoka/ccsl │ 🌿 main✱ ↑2 │ 🌳 my-feature ← main │ 🔗 PR #1234 👀
 🧠 ████░░░░░░ 43% (85.7k/200k) │ 💾 91% 42m/1h │ ⏳ 5h 24% 2h10m │ 📅 7d 91% 3d4h │ 💰 $1.23
 🆔 2fa45908-49bb-4048-b74c-e58d273f075a │ ⏱️ 1h15m │ ⚡ 12m03s │ ⚙️ ~/.claude-work
+📡 remote-control on session_012wtouQ3QVVQ1q8jnuwJVjN
 ```
 
-1 行目にセッション名、2 行目に「どこで作業しているか」、3 行目に「どれだけ消費しているか」、4 行目にセッション ID と経過時間を表示します。
+1 行目にセッション名、2 行目に「どこで作業しているか」、3 行目に「どれだけ消費しているか」、4 行目にセッション ID と経過時間、5 行目に Remote Control の状態を表示します。
 
 ## 表示内容
 
@@ -31,6 +32,7 @@ Claude Code が stdin に流すセッション JSON を読み、4 行のステ�
 | ⏱️ | セッション継続時間 | `cost.total_duration_ms` |
 | ⚡ | API 合計時間 | `cost.total_api_duration_ms` |
 | 🆔 | セッション ID | `session_id` を省略せず全体表示 |
+| 📡 | Remote Control | `on`（緑、claude.ai のセッションへの OSC 8 リンク付き）とブリッジセッション ID、または `off`。状態が判別できないときは行ごと省略 |
 | ⚙️ | 設定ディレクトリ | 環境変数 `CLAUDE_CONFIG_DIR` が設定されているときだけ表示。`$HOME` は `~` に短縮 |
 
 JSON に含まれない項目（名前が付いていない、PR がない、worktree ではない、サブスクリプションのレート制限が届いていない等）は自動的に省略されます。行の中身がすべて無い場合はその行ごと出力しません。
@@ -98,7 +100,7 @@ go build -o ccsl .
 
 | フラグ | 説明 |
 |---|---|
-| `--one-line` | 4 行ではなく 1 行にまとめる |
+| `--one-line` | 複数行ではなく 1 行にまとめる |
 | `--no-emoji` | 絵文字の代わりにテキストラベル (`model` / `dir` / `ctx` …) を使う |
 | `--no-color` | ANSI カラーを出力しない（環境変数 `NO_COLOR` でも同じ） |
 | `--no-links` | PR の OSC 8 クリッカブルリンクを無効化（未対応ターミナル向け） |
@@ -126,6 +128,7 @@ echo '{
 
 - Claude Code はアシスタントのメッセージごとにこのコマンドを実行するため、git 呼び出しには 400ms のタイムアウトを設けています。取得できなければブランチ表示を省略するだけで、ステータスラインが止まることはありません。
 - 環境変数 `CLAUDE_CONFIG_DIR` が設定されている場合は、その値を最終行の末尾に表示します。既定の `~/.claude` を使っているときは何も出ません。
+- Remote Control の状態は status line の JSON に含まれないため、Claude Code が設定する環境変数 `CLAUDE_CODE_BRIDGE_SESSION_ID`、またはプロセスごとのセッションファイル `<設定ディレクトリ>/sessions/<pid>.json` の `bridgeSessionId` から読み取ります（`session_id` が一致するもののうち最も新しいもの）。いずれも Claude Code の非公開の内部状態なので、将来のバージョンで読めなくなった場合は行ごと表示されなくなります。
 - ターミナル幅は Claude Code が渡す環境変数 `COLUMNS` から読み取り、はみ出す場合はディレクトリを省略、それでも収まらなければ行末を `…` で切り詰めます。
 - `rate_limits` は Claude.ai Pro / Max のサブスクリプションで、かつセッション最初の API 応答以降にのみ届きます。
 - `prompt_cache` もセッション最初の API 応答以降にのみ届きます（メインの会話のみが対象で、サブエージェントの分は含まれません）。

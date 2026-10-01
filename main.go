@@ -69,6 +69,7 @@ func run(stdin io.Reader, stdout io.Writer, opt Options) error {
 	}
 
 	git := readGit(in.dir(), opt.GitDirty)
+	opt.Remote = readRemoteControl(opt.ConfigDir, in.SessionID)
 	_, err = fmt.Fprintln(stdout, Render(&in, opt, git, time.Now()))
 	return err
 }

@@ -17,6 +17,8 @@ type Options struct {
 	BarWidth   int
 	Columns    int
 	ConfigDir  string
+	// Remote is the Remote Control state, looked up outside the payload.
+	Remote remoteControl
 }
 
 // minDirWidth is the narrowest elided path still worth showing.
@@ -65,13 +67,13 @@ func (r *renderer) icon(emoji, label string) string {
 	return label + " "
 }
 
-// Render produces the full status line: four rows joined by newlines, or a
+// Render produces the full status line: up to five rows joined by newlines, or a
 // single row when Options.SingleLine is set. A row whose fields are all absent
 // is dropped rather than left blank.
 func Render(in *Input, opt Options, git gitInfo, now time.Time) string {
 	r := newRenderer(in, opt, git, now)
 
-	lines := []string{r.nameLine(), r.locationLine(), r.usageLine(), r.sessionLine()}
+	lines := []string{r.nameLine(), r.locationLine(), r.usageLine(), r.sessionLine(), r.remoteLine()}
 
 	if opt.SingleLine {
 		return truncateToWidth(joinNonEmpty(r.sepC, lines...), opt.Columns)
@@ -179,6 +181,21 @@ func (r *renderer) sessionLine() string {
 		segs = append(segs, c)
 	}
 	return joinNonEmpty(r.sepC, segs...)
+}
+
+// remoteLine reports whether Remote Control is on, linking to the session on
+// claude.ai while it is. The row is dropped when the state is unknown.
+func (r *renderer) remoteLine() string {
+	rc := r.opt.Remote
+	if !rc.Known {
+		return ""
+	}
+	label := r.icon("📡", "") + r.p.paint(ansiGray, "remote-control ")
+	if rc.SessionID == "" {
+		return label + r.p.paint(ansiGray, "off")
+	}
+	return label + r.p.link(remoteSessionURL(rc.SessionID), r.p.paint(ansiGreen, "on")) +
+		r.p.paint(ansiGray, " "+rc.SessionID)
 }
 
 // configDirSegment names the config directory, but only when
