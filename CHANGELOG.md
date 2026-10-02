@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.3.0](https://github.com/yteraoka/ccsl/compare/v1.2.0...v1.3.0) - 2026-10-02
+
+- Update Songmu/tagpr action to v1.21.1 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/26
+- 最下段に Remote Control の状態を表示する by @yteraoka in https://github.com/yteraoka/ccsl/pull/28
+- Update jdx/mise-action action to v5 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/25
+
 ## [v1.1.1](https://github.com/yteraoka/ccsl/compare/v1.1.0...v1.1.1) - 2026-09-26
 
 - Update dependency pinact to v5 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/17
