@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.3.1](https://github.com/yteraoka/ccsl/compare/v1.3.0...v1.3.1) - 2026-10-09
+
+- Update jdx/mise-action action to v5.1.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/29
+- Update jdx/mise-action action to v5.1.1 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/31
+- Update Songmu/tagpr action to v1.21.2 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/32
+- Update dependency go to v1.27.2 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/33
+- Update dependency goreleaser to v2.18.3 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/34
+
 ## [v1.3.0](https://github.com/yteraoka/ccsl/compare/v1.2.0...v1.3.0) - 2026-10-02
 
 - Update Songmu/tagpr action to v1.21.1 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/26
