@@ -1,5 +1,28 @@
 # Changelog
 
+## [v1.3.1](https://github.com/yteraoka/ccsl/compare/v1.3.0...v1.3.1) - 2026-10-31
+
+- Update jdx/mise-action action to v5.1.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/29
+- Update jdx/mise-action action to v5.1.1 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/31
+- Update Songmu/tagpr action to v1.21.2 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/32
+- Update dependency go to v1.27.2 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/33
+- Update dependency goreleaser to v2.18.3 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/34
+- Update jdx/mise-action action to v5.1.2 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/35
+- Update actions/create-github-app-token action to v3.3.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/36
+- Update Songmu/tagpr action to v1.21.3 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/37
+- Update dependency golangci-lint to v2.15.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/38
+- Update jdx/mise-action action to v5.2.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/39
+- Update dependency go to v1.27.3 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/40
+- Update jdx/mise-action action to v5.2.1 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/41
+- Update jdx/mise-action action to v5.2.2 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/42
+- Update dependency pinact to v5.0.1 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/43
+- Update dependency goreleaser to v2.19.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/44
+- Update Songmu/tagpr action to v1.21.4 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/45
+- Update jdx/mise-action action to v5.2.3 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/46
+- Update dependency pinact to v5.0.2 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/47
+- Update jdx/mise-action action to v5.2.4 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/48
+- Update jdx/mise-action action to v5.2.5 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/49
+
 ## [v1.3.0](https://github.com/yteraoka/ccsl/compare/v1.2.0...v1.3.0) - 2026-10-02
 
 - Update Songmu/tagpr action to v1.21.1 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/26
