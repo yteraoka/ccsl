@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.3.2](https://github.com/yteraoka/ccsl/compare/v1.3.1...v1.3.2) - 2026-11-06
+
+- Update dependency goreleaser to v2.20.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/52
+- Update jdx/mise-action action to v5.2.7 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/54
+
 ## [v1.3.1](https://github.com/yteraoka/ccsl/compare/v1.3.0...v1.3.1) - 2026-11-03
 
 - Update jdx/mise-action action to v5.1.0 by @renovate[bot] in https://github.com/yteraoka/ccsl/pull/29
